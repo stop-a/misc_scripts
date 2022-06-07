@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# runlab script to spin up deliberatly vulnerable apps used in _Hacking APIs_
+# NOTE: git clone Pixi and download crAPI's docker-compose.yaml into separate directories
+
+devpath=<Insert Path to dev dir holding "git clones">
+
+userid=$(whoami)
+
+if [ "${userid}" != "root" ] ; then
+    printf "Not root! Exiting...\n"
+    exit
+fi
+
+if [ -z $1 ] ; then
+    printf "What's the app!?\n"
+    exit
+fi
+
+case $2 in
+    start) action=start;;
+    stop) action=stop;;
+    *) printf "Second paramater is supposed to be start or stop. Exiting...\n" && exit;;
+esac
+
+app=$1
+
+if [ "${app}" == "pixi" ] ; then
+    cd ${devpath}/Pixi
+    
+    if [ "${action}" = "start" ] ; then
+    	docker compose up -d
+    elif [ "${action}" = "stop" ] ; then
+    	docker compose down
+    else
+        printf "You shouldn't be here! Exiting...\n"
+	exit
+    fi
+elif [ "${app}" == "juice" ] ; then
+    # This one isn't backgrounded or detached, so start/stop doesn't apply
+    # Moved external listener to 8000, I put all these behind a reverse proxy in my lab, ymmv
+    docker pull bkimminich/juice-shop && docker run --rm -p 8000:3000 bkimminich/juice-shop
+elif [ "${app}" == "dvga" ] ; then
+    # This one isn't backgrounded or detached, so start/stop doesn't apply
+    # Moved external listener to 8000, I put all these behind a reverse proxy in my lab, ymmv
+    docker pull dolevf/dvga && docker run -t -p 8000:5000 -e WEB_HOST=0.0.0.0 dolevf/dvga
+elif [ "${app}" == "crapi" ] ; then
+    cd ${devpath}/crAPI
+
+    if [ "${action}" = "start" ] ; then
+    	docker compose up -d
+    elif [ "${action}" = "stop" ] ; then
+    	docker compose down
+    else
+        printf "You shouldn't be here! Exiting...\n"
+	exit
+    fi
+else
+    printf "You asked for ${app}, which isn't a thing. Need to configure this script to support it.\n"
+    exit
+fi
